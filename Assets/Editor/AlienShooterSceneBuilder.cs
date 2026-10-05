@@ -4,11 +4,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// One-click setup: Tools > Alien Shooter > Build Game Scene.
-/// Generates sprite PNGs, creates the Bullet / Enemy / PowerUp / Player prefabs,
-/// builds and saves the scene, and adds it to the Build Settings.
-/// </summary>
+
 public static class AlienShooterSceneBuilder
 {
     const string SpriteDir = "Assets/Sprites";
@@ -34,7 +30,12 @@ public static class AlienShooterSceneBuilder
         PowerUp powerUpPrefab = CreatePowerUpPrefab(circle);
         PlayerController playerPrefab = CreatePlayerPrefab(triangle, bulletPrefab);
 
-        BuildScene(playerPrefab, enemyPrefab, powerUpPrefab);
+        // FIX: Pass GameObject prefabs instead of component references
+        BuildScene(
+            playerPrefab.gameObject,
+            enemyPrefab.gameObject,
+            powerUpPrefab.gameObject
+        );
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -193,7 +194,8 @@ public static class AlienShooterSceneBuilder
 
     // ------------------------------------------------------------------ scene
 
-    static void BuildScene(PlayerController playerPrefab, Enemy enemyPrefab, PowerUp powerUpPrefab)
+    // FIXED VERSION — accepts GameObject prefabs
+    static void BuildScene(GameObject playerPrefab, GameObject enemyPrefab, GameObject powerUpPrefab)
     {
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -214,7 +216,7 @@ public static class AlienShooterSceneBuilder
         bg.AddComponent<ScrollingBackground>();
 
         // Player
-        GameObject playerGo = (GameObject)PrefabUtility.InstantiatePrefab(playerPrefab.gameObject);
+        GameObject playerGo = (GameObject)PrefabUtility.InstantiatePrefab(playerPrefab);
         playerGo.transform.position = new Vector3(0f, -3.8f, 0f);
         PlayerController player = playerGo.GetComponent<PlayerController>();
 
@@ -222,8 +224,8 @@ public static class AlienShooterSceneBuilder
         GameObject spawnerGo = new GameObject("EnemySpawner");
         spawnerGo.transform.position = new Vector3(0f, 6f, 0f);
         EnemySpawner spawner = spawnerGo.AddComponent<EnemySpawner>();
-        SetRef(spawner, "enemyPrefab", enemyPrefab);
-        SetRef(spawner, "powerUpPrefab", powerUpPrefab);
+        SetRef(spawner, "enemyPrefab", enemyPrefab.GetComponent<Enemy>());
+        SetRef(spawner, "powerUpPrefab", powerUpPrefab.GetComponent<PowerUp>());
 
         // Systems: game manager, audio, UI
         GameObject systems = new GameObject("GameSystems");
